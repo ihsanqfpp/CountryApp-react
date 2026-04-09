@@ -1,89 +1,71 @@
-import { useState } from "react";
-import axios from "axios";
-
+import { useCountry } from './hooks/useCountry';
+import { useTheme } from './context/ThemeContext';
+import ThemeToggle from './components/ThemeToggle';
+import SearchForm from './components/SearchForm';
+import CountryDetails from './components/CountryDetails';
+import CountryList from './components/CountryList';
+import Loader from './components/Loader';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function Country() {
-  const [input, setInput] = useState("");
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
-  const [background, setBackground] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
-
-  async function getData() {
-    if (!input.trim()) {
-      setError("Please enter a country name.");
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await axios.get(`https://restcountries.com/v3.1/name/${input}`);
-      const country = response.data[0];
-
-      setData({
-        name: country.name.official,
-        flag: country.flags.png,
-        population: country.population,
-        region: country.region,
-        capital: country.capital ? country.capital[0] : "N/A",
-        currency: country.currencies ? Object.values(country.currencies)[0].name : "N/A",
-        language: country.languages ? Object.values(country.languages).join(", ") : "N/A",
-        callingCode: country.idd?.root ? country.idd.root + (country.idd.suffixes ? country.idd.suffixes[0] : "") : "N/A",
-      });
-
-      // Set full-page background to the country's flag
-      setBackground(country.flags?.png || "");
-      setError(null);
-    } catch (err) {
-      setError("Country not found. Please try again.");
-      setData(null);
-      setBackground("");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const { data, results, error, loading, background, searchCountry, selectCountry } = useCountry();
+  const { darkMode } = useTheme();
 
   return (
-    <div className={`container ${darkMode ? "dark-mode" : ""}`} style={{ backgroundImage: `url(${background})` }}>
-      <div className="overlay">
-        <h1 className="title">🌍 Country Information 🌎</h1>
+    <div className={`app-wrapper ${darkMode ? "dark-mode" : ""}`}>
+      {/* Luxury Immersive Background Layer */}
+      <div 
+        className="bg-immersive" 
+        style={{ 
+          backgroundImage: background ? `url(${background})` : 'none',
+          display: background ? 'block' : 'none' 
+        }} 
+      />
+      
+      <div className="container">
+        <ThemeToggle />
 
-        {/* Dark Mode Toggle */}
-        <button className="theme-toggle" onClick={() => setDarkMode(!darkMode)}>
-          {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-        </button>
+        <motion.div 
+          className="glass-card"
+          initial={{ opacity: 0, scale: 0.98, y: 30 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <header>
+            <h1 className="title">Global Explorer</h1>
+          </header>
 
-        <div className="search-box">
-          <input 
-            type="text" 
-            placeholder="Enter country name" 
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && getData()}
-          />
-          <button onClick={getData} disabled={loading}>
-            {loading ? "Loading..." : "Get Data"}
-          </button>
-        </div>
+          <SearchForm onSearch={searchCountry} loading={loading} />
 
-        {error && <p className="error">{error}</p>}
-        
-        {/* Skeleton Loader While Fetching */}
-        {loading && <div className="loading-skeleton"></div>}
-
-        {data && !loading && (
-  <div className="country-info fade-in">
-    <img src={data.flag} alt={`Flag of ${data.name}`} className="flag-image" />
-    <h2>{data.name}</h2>
-    <p><strong>Capital:</strong> {data.capital}</p>
-    <p><strong>Region:</strong> {data.region}</p>
-    <p><strong>Population:</strong> {data.population.toLocaleString()}</p>
-    <p><strong>Currency:</strong> {data.currency}</p>
-    <p><strong>Language(s):</strong> {data.language}</p>
-    <p><strong>Calling Code:</strong> {data.callingCode}</p>
-  </div>
-        )}
+          <AnimatePresence mode="wait">
+            {error && (
+              <motion.div 
+                className="error-msg"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+              >
+                <span className="error-icon">🔍</span>
+                <div className="error-text">
+                  <strong>No country found</strong>
+                  <p>Check the spelling or try a broader name like "America" or "United".</p>
+                </div>
+              </motion.div>
+            )}
+            
+            {loading ? (
+              <Loader key="loader" />
+            ) : (
+              <div className="results-wrapper">
+                {results.length > 0 ? (
+                  <CountryList key="results" results={results} onSelect={selectCountry} />
+                ) : (
+                  <CountryDetails key="details" data={data} />
+                )}
+              </div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </div>
     </div>
   );
