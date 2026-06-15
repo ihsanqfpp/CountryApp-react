@@ -29,7 +29,7 @@ describe('fetchCountryByName', () => {
     const result = await fetchCountryByName('France');
     expect(result).toEqual([mockCountry]);
     expect(axios.get).toHaveBeenCalledWith(
-      'https://restcountries.com/v3.1/name/France'
+      'https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json'
     );
   });
 
@@ -51,9 +51,9 @@ describe('fetchCountryByName', () => {
 
   it('calls the API with the correct URL', async () => {
     axios.get.mockResolvedValueOnce({ data: [mockCountry] });
-    await fetchCountryByName('Japan');
+    await fetchCountryByName('France');
     expect(axios.get).toHaveBeenCalledWith(
-      'https://restcountries.com/v3.1/name/Japan'
+      'https://cdn.jsdelivr.net/gh/mledoze/countries@master/countries.json'
     );
   });
 });
